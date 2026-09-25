@@ -7,6 +7,7 @@ import { generateCandidates } from "../src/engine/candidates.js";
 import { loadGraph } from "../src/engine/lockfile.js";
 import { formatPlan } from "../src/engine/plan.js";
 import { runOptimize } from "../src/commands/optimize.js";
+import { formatDoctor } from "../src/commands/doctor.js";
 import type { JevClient } from "../src/jev/client.js";
 
 const fixture = path.join(process.cwd(), "test/fixtures/project");
@@ -27,6 +28,9 @@ test("the fixture yields one candidate of each kind", async () => {
   assert.equal(kindOf("unused-lib"), "remove");
   assert.equal(kindOf("react"), "review-upgrade");
   assert.equal(kindOf("host"), "unsafe");
+  const doctor = await formatDoctor(graph);
+  assert.match(doctor, /Rejected \(1\)/);
+  assert.match(doctor, /host 1\.2\.0, 1\.1\.0/);
 });
 
 test("optimize --show-plan prints the demo shape", async () => {

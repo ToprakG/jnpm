@@ -11,6 +11,7 @@ import { formatWhy } from "./commands/why.js";
 import { loadGraph } from "./engine/lockfile.js";
 import { clientFromEnv } from "./jev/client.js";
 import { spawnNpm, toNpmArgs } from "./npm/run.js";
+import { findProjectRoot } from "./project.js";
 
 const NPM_COMMANDS = new Set([
   "install",
@@ -72,12 +73,14 @@ export function loadDotEnv(cwd: string, env: NodeJS.ProcessEnv): void {
 }
 
 export async function main(argv: string[], cwd = process.cwd(), env: NodeJS.ProcessEnv = process.env): Promise<number> {
-  loadDotEnv(cwd, env);
   const [command, ...rest] = argv;
   if (!command || command === "help" || command === "--help") {
     console.log(USAGE);
     return command ? 0 : 1;
   }
+
+  const root = findProjectRoot(cwd);
+  loadDotEnv(root, env);
 
   try {
     if (NPM_COMMANDS.has(command)) {
@@ -86,11 +89,11 @@ export async function main(argv: string[], cwd = process.cwd(), env: NodeJS.Proc
         console.error(mapped.error);
         return 1;
       }
-      return await spawnNpm(mapped.args, cwd);
+      return await spawnNpm(mapped.args, root);
     }
 
     if (command === "tree") {
-      console.log(formatTree(await loadGraph(cwd)));
+      console.log(formatTree(await loadGraph(root)));
       return 0;
     }
     if (command === "why") {
@@ -99,20 +102,20 @@ export async function main(argv: string[], cwd = process.cwd(), env: NodeJS.Proc
         console.error("usage: jnpm why <package>");
         return 1;
       }
-      console.log(formatWhy(await loadGraph(cwd), name));
+      console.log(formatWhy(await loadGraph(root), name));
       return 0;
     }
     if (command === "conflicts") {
-      console.log(await formatConflicts(await loadGraph(cwd)));
+      console.log(await formatConflicts(await loadGraph(root)));
       return 0;
     }
     if (command === "doctor") {
-      console.log(await formatDoctor(await loadGraph(cwd)));
+      console.log(await formatDoctor(await loadGraph(root)));
       return 0;
     }
     if (command === "explain") {
       const name = rest.find((arg) => !arg.startsWith("-"));
-      console.log(await formatExplain(cwd, name));
+      console.log(await formatExplain(root, name));
       return 0;
     }
     if (command === "optimize") {
@@ -127,7 +130,7 @@ export async function main(argv: string[], cwd = process.cwd(), env: NodeJS.Proc
         return 1;
       }
       const result = await runOptimize({
-        cwd,
+        cwd: root,
         apply: flags.has("--apply"),
         install: flags.has("--install"),
         json: flags.has("--json"),

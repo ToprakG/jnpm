@@ -10,9 +10,14 @@ export async function formatDoctor(graph: Graph): Promise<string> {
   }
   const duplicated = [...names.values()].filter((versions) => versions.size > 1).length;
   const candidates = await generateCandidates(graph);
-  const high = candidates.filter((item) => item.kind === "review-upgrade" || (item.kind === "unsafe" && !item.rangesOk)).length;
-  const medium = candidates.filter((item) => item.rangesOk && item.kind !== "remove" && item.kind !== "unsafe").length;
-  const low = [...names.values()].filter((versions) => versions.size === 1).length;
+  const conflicts = candidates
+    .filter((item) => item.kind === "review-upgrade" || (item.kind === "unsafe" && !item.rangesOk))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const collapses = candidates
+    .filter((item) => item.rangesOk && item.kind !== "remove" && item.kind !== "unsafe")
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const unused = candidates.filter((item) => item.kind === "remove").sort((a, b) => a.name.localeCompare(b.name));
+  const unsafe = candidates.filter((item) => item.kind === "unsafe").sort((a, b) => a.name.localeCompare(b.name));
   const bytes = graph.nodes.some((node) => node.bytes === null)
     ? null
     : graph.nodes.reduce((sum, node) => sum + (node.bytes ?? 0), 0);
@@ -24,11 +29,25 @@ export async function formatDoctor(graph: Graph): Promise<string> {
   if (bytes !== null) {
     lines.push(`${Math.round(bytes / (1024 * 1024)).toLocaleString("en-US")} MB dependency footprint`);
   }
-  lines.push(
-    "",
-    `HIGH     ${high} conflicting dependency ${high === 1 ? "cluster" : "clusters"}`,
-    `MEDIUM   ${medium} ${medium === 1 ? "duplicate that could collapse" : "duplicates that could collapse"}`,
-    `LOW      ${low} single-version ${low === 1 ? "package" : "packages"}`,
-  );
+  if (conflicts.length === 0 && collapses.length === 0 && unused.length === 0 && unsafe.length === 0) {
+    lines.push("", "No dependency issues.");
+    return lines.join("\n");
+  }
+  if (conflicts.length > 0) {
+    lines.push("", `Conflicts (${conflicts.length})`);
+    for (const item of conflicts) lines.push(`  ${item.name} ${item.versions.join(", ")}`);
+  }
+  if (collapses.length > 0) {
+    lines.push("", `Could collapse (${collapses.length})`);
+    for (const item of collapses) lines.push(`  ${item.name} → ${item.proposedVersion}`);
+  }
+  if (unused.length > 0) {
+    lines.push("", `Unused direct dependencies (${unused.length})`);
+    for (const item of unused) lines.push(`  ${item.name}`);
+  }
+  if (unsafe.length > 0) {
+    lines.push("", `Rejected (${unsafe.length})`);
+    for (const item of unsafe) lines.push(`  ${item.name} ${item.versions.join(", ")}`);
+  }
   return lines.join("\n");
 }

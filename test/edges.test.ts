@@ -47,8 +47,13 @@ test("edge graph classifies peers, majors, scoped names, and unused deps", async
   assert.match(conflicts, /tiny/);
   assert.doesNotMatch(conflicts, /minimist/);
   const doctor = await formatDoctor(graph);
-  assert.match(doctor, /HIGH\s+2 conflicting/);
-  assert.match(doctor, /MEDIUM\s+3 duplicates/);
+  assert.match(doctor, /Conflicts \(2\)/);
+  assert.match(doctor, /chalk 5\.3\.0, 4\.1\.2/);
+  assert.match(doctor, /Could collapse \(3\)/);
+  assert.match(doctor, /minimist → 1\.2\.6/);
+  assert.match(doctor, /Unused direct dependencies \(2\)/);
+  assert.match(doctor, /ghost/);
+  assert.doesNotMatch(doctor, /eslint/);
 });
 
 test("a major bump and a peer-safe lower version follow the ceiling", async () => {
@@ -134,6 +139,20 @@ test("cli usage and a missing lockfile", async () => {
     assert.equal(await main(["nope"], empty, {}), 1);
   } finally {
     console.error = original;
+  }
+});
+
+test("commands started in a subdirectory use the project root", async () => {
+  const logs: string[] = [];
+  const original = console.log;
+  console.log = (...args: unknown[]) => logs.push(args.join(" "));
+  try {
+    const code = await main(["doctor"], path.join(edges, "src"), {});
+    assert.equal(code, 0);
+    assert.match(logs.join("\n"), /Could collapse \(3\)/);
+    assert.match(logs.join("\n"), /Conflicts \(2\)/);
+  } finally {
+    console.log = original;
   }
 });
 

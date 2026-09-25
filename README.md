@@ -1,21 +1,21 @@
 # JNPM
 
-JNPM is a dependency manager that uses Jev to make the small judgment calls humans normally make when maintaining dependency graphs.
+JNPM is a dependency manager. A dependency manager installs packages and updates packages. A dependency graph is the set of packages that a project needs. JNPM uses Jev for the small decisions that a person makes during work on a dependency graph.
 
-JNPM handles the facts. Jev handles the judgment. JNPM executes the result.
+Jev is a decision model. You send Jev the facts and a fixed set of options. Jev returns a probability for each option.
 
-Package installs, updates, and scripts go to the `npm` binary on your machine. `jnpm optimize` is the command that asks Jev which graph simplifications are safe, then applies only the ones that also pass deterministic checks. Jev never invents a version and never edits the filesystem.
+JNPM keeps the facts. Jev makes the decision. JNPM performs the action.
+
+The install, update, and script commands call the npm program on your computer. The command `jnpm optimize` asks Jev which simpler graphs are safe. JNPM applies a change only when the fixed checks also pass. Jev does not create a version. Jev does not edit files.
 
 ## Install
 
-Node.js 20 or newer.
+You need Node.js 20 or a newer version.
 
-```bash
-npm install
-npm link
-```
+1. Run `npm install`.
+2. Run `npm link`.
 
-`npm install` builds `dist/` through the `prepare` script. From a checkout you can also run `node dist/cli.js` or `npm run jnpm -- optimize`.
+The `prepare` script builds the `dist/` folder when you run `npm install`. You can also run `node dist/cli.js`. You can also run `npm run jnpm -- optimize`.
 
 ## Commands
 
@@ -41,15 +41,40 @@ jnpm ci
 jnpm run <script>
 ```
 
-`install`, `add`, `remove`, `update`, `upgrade`, `dedupe`, `audit`, `outdated`, `clean`, `prune`, `lock`, `ci`, and `run` delegate to npm.
+These commands call npm:
 
-`tree`, `why`, `conflicts`, and `doctor` read `package-lock.json` (npm lockfile v2 or v3). They do not call Jev. pnpm and yarn lockfiles are not supported.
+- `install`
+- `add`
+- `remove`
+- `update`
+- `upgrade`
+- `dedupe`
+- `audit`
+- `outdated`
+- `clean`
+- `prune`
+- `lock`
+- `ci`
+- `run`
+
+These commands read `package-lock.json`:
+
+- `tree`
+- `why`
+- `conflicts`
+- `doctor`
+
+JNPM reads npm lockfile version 2 and version 3. These four commands do not call Jev. JNPM does not read a pnpm lockfile. JNPM does not read a yarn lockfile.
 
 ## optimize
+
+Run this command:
 
 ```bash
 jnpm optimize --show-plan
 ```
+
+The command prints a plan like this example:
 
 ```text
 Found 6 optimization opportunities.
@@ -71,15 +96,31 @@ Potential:
   18 packages → 14 packages
 ```
 
-JNPM only proposes a version that is already installed. Jev is asked one yes/no probability (`compatible`) and one choice (`apply`, `review`, or `reject`) when every parent range and peer dependency already accepts that version. Broken peers are rejected without a model call. A different major is capped at review even if Jev says apply. A change is applied only when the yes probability is at least 0.85 and Jev chooses `apply`.
+JNPM proposes only a version that is already on the computer.
 
-Create a `.env` in the project you are optimizing (see `.env.example`):
+A parent range is the version range that one package requires. A peer dependency is a package that must already be present. JNPM asks Jev two questions when every parent range accepts the proposed version and every peer dependency accepts that version.
+
+- `compatible` is the probability that the answer is yes.
+- `action` is one of these choices: `apply`, `review`, or `reject`.
+
+JNPM rejects a broken peer dependency. JNPM does not call Jev for that case.
+
+A major number is the first part of a version. If the proposed version has a different major number, JNPM sets the result to `review`. JNPM does this even when Jev selects `apply`.
+
+JNPM applies a change only when both of these conditions are true:
+
+1. The yes probability is 0.85 or higher.
+2. Jev selects `apply`.
+
+Put a `.env` file in the project that you optimize. The file `.env.example` shows the shape.
 
 ```bash
 OPENROUTER_API_KEY=sk-or-...
 ```
 
-That calls `typesafe/jev-1.13` through the [OpenRouter Decisions API](https://openrouter.ai/docs/guides/community/jev). Without a key, grey-area candidates are marked review and the plan still prints. An existing environment variable wins over `.env`.
+This key calls the model `typesafe/jev-1.13` through the [OpenRouter Decisions API](https://openrouter.ai/docs/guides/community/jev). If you do not set a key, JNPM marks each uncertain candidate as `review`. JNPM still prints the plan. If the same name is already in the environment, JNPM uses that value. JNPM ignores the value in `.env`.
+
+You can also run these commands:
 
 ```bash
 jnpm optimize --apply
@@ -87,14 +128,20 @@ jnpm optimize --apply --install
 jnpm explain <package>
 ```
 
-`--apply` writes npm `overrides` for accepted versions and removes unused direct dependencies from `package.json`. It does not edit `node_modules`. `--install` runs `npm install` after that. `explain` prints the decision log from `.jnpm/decisions.json`.
+`--apply` writes an npm override for each accepted version. An override forces one version of a package. `--apply` removes each unused direct dependency from `package.json`. `--apply` does not edit the `node_modules` folder.
+
+`--install` runs `npm install` after `--apply`.
+
+`explain` prints the decision log in `.jnpm/decisions.json`.
 
 ## Development
+
+Run this command:
 
 ```bash
 npm test
 ```
 
-Tests use Node's built-in test runner. They do not call the network or the npm registry. The fixture projects live in `test/fixtures/`.
+The tests use the test runner in Node.js. The tests do not call the network. The tests do not call the npm registry. The example projects are in `test/fixtures/`.
 
-MIT
+The license is MIT.

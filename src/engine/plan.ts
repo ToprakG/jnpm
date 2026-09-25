@@ -90,29 +90,31 @@ export function reachableAfter(graph: Graph, applied: Judged[]): Set<string> {
 export function formatPlan(plan: Plan): string {
   const lines: string[] = [
     `Found ${plan.opportunities} optimization ${plan.opportunities === 1 ? "opportunity" : "opportunities"}.`,
-    "",
   ];
+  const body: string[] = [];
 
   for (const kind of KIND_ORDER) {
     const items = byName(plan.judged.filter((item) => item.kind === kind && item.outcome === "apply"));
     if (items.length === 0) continue;
-    lines.push(`✓ ${kindLine(kind, items.length)}`);
-    for (const item of items) lines.push(detail(item));
+    body.push(`✓ ${kindLine(kind, items.length)}`);
+    for (const item of items) body.push(detail(item));
   }
 
   const reviews = byName(plan.judged.filter((item) => item.outcome === "review"));
   if (reviews.length > 0) {
     const upgrades = reviews.every((item) => item.kind === "review-upgrade");
     const noun = upgrades ? (reviews.length === 1 ? "upgrade requires" : "upgrades require") : (reviews.length === 1 ? "change requires" : "changes require");
-    lines.push(`⚠ ${reviews.length} ${noun} review`);
-    for (const item of reviews) lines.push(detail(item));
+    body.push(`⚠ ${reviews.length} ${noun} review`);
+    for (const item of reviews) body.push(detail(item));
   }
 
   const rejected = byName(plan.judged.filter((item) => item.outcome === "reject"));
   if (rejected.length > 0) {
-    lines.push(`✗ ${rejected.length} ${rejected.length === 1 ? "change" : "changes"} rejected as unsafe`);
-    for (const item of rejected) lines.push(detail(item));
+    body.push(`✗ ${rejected.length} ${rejected.length === 1 ? "change" : "changes"} rejected as unsafe`);
+    for (const item of rejected) body.push(detail(item));
   }
+
+  if (body.length > 0) lines.push("", ...body);
 
   lines.push("", "Potential:");
   if (plan.beforeBytes !== null && plan.afterBytes !== null) {
