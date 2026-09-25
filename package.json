@@ -1,0 +1,29 @@
+{
+  "name": "jnpm",
+  "version": "0.1.0",
+  "description": "A dependency manager that uses Jev for the small judgment calls in an npm graph.",
+  "license": "MIT",
+  "keywords": ["cli", "npm", "dependencies", "jev", "lockfile"],
+  "type": "module",
+  "bin": {
+    "jnpm": "./dist/cli.js"
+  },
+  "files": ["dist", "LICENSE", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js",
+    "jnpm": "node dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "semver": "^7.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/semver": "^7.7.0",
+    "typescript": "^5.8.3"
+  }
+}

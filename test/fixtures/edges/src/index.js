@@ -1,0 +1,27 @@
+import used from "@acme/used";
+import widget from "@acme/widget";
+import chalk from "chalk";
+import leftPad from "left-pad";
+import minimist from "minimist";
+import pkgA from "pkg-a";
+import pkgB from "pkg-b";
+import pkgC from "pkg-c";
+import pkgD from "pkg-d";
+import pkgE from "pkg-e";
+import reactDom from "react-dom";
+import starry from "starry";
+import tiny from "tiny";
+
+void used;
+void widget;
+void chalk;
+void leftPad;
+void minimist;
+void pkgA;
+void pkgB;
+void pkgC;
+void pkgD;
+void pkgE;
+void reactDom;
+void starry;
+void tiny;
